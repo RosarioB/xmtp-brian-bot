@@ -30,5 +30,17 @@ Set up these variables in your app
 KEY= # 0x... the private key of the bot wallet (with the 0x prefix)
 ```
 
+# Docker
+Build image:
+```sh
+docker build -t brian_bot . 
+```
+
+Run Docker container:
+```sh
+docker run -p 3000:3000 brian_bot
+```
+
+
 ---
 Made with ❤️ by [Ephemera](https://ephemerahq.com)
