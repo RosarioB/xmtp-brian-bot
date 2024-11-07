@@ -1,6 +1,6 @@
 # xmtp_brian_bot
 
-This project is generated using the [MessageKit](https://message-kit.vercel.app) v1.0.11 CLI and uses the `gm` template. Below are the instructions to set up and run the project.
+This project is generated using the [MessageKit](https://message-kit.vercel.app) v1.0.11 CLI. Below are the instructions to set up and run the project.
 
 ## Setup
 
@@ -13,14 +13,13 @@ Follow these steps to set up and run the project:
 
 2. **Install dependencies:**
     ```sh
-    bun install
+    yarn install
     ```
 
 3. **Run the project:**
     ```sh
-    bun dev
+    yarn dev
     ```
-
 
 ## Variables
 
@@ -28,6 +27,7 @@ Set up these variables in your app
 
 ```sh
 KEY= # 0x... the private key of the bot wallet (with the 0x prefix)
+BRIAN_API_KEY= # Brian API KEY
 ```
 
 # Docker
@@ -36,9 +36,9 @@ Build image:
 docker build -t brian_bot . 
 ```
 
-Run Docker container:
+Run Docker container with volume:
 ```sh
-docker run -p 3000:3000 brian_bot
+docker run --rm --name brian_bot_container -p 3000:3000  brian_bot
 ```
 
 
