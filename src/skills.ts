@@ -1,6 +1,5 @@
-//import { handleEns } from "./handler/ens.js";
 import type { SkillGroup } from "@xmtp/message-kit";
-import { handleHelp, handleAsk } from "./handler/general.js";
+import { handleHelp, handleAsk, handleTransaction } from "./handler/general.js";
 
 export const skills: SkillGroup[] = [
   {
@@ -28,6 +27,24 @@ export const skills: SkillGroup[] = [
         handler: handleAsk,
         params: {
           query: {
+            type: "prompt",
+          },
+        },
+      },
+    ],
+  },
+  {
+    name: "Create Transaction to send money to another wallet",
+    description: "Create transactions to send money to another wallet",
+    skills: [
+      {
+        command: "/transaction [prompt]",
+        triggers: ["/transaction"],
+        examples: ["/transaction Transfer 0.000002 ETH to 0x20c6F9006d563240031A1388f4f25726029a6368 on Base Sepolia"],
+        description: "Create to send money to another wallet.",
+        handler: handleTransaction,
+        params: {
+          prompt: {
             type: "prompt",
           },
         },
