@@ -1,5 +1,5 @@
 import type { SkillGroup } from "@xmtp/message-kit";
-import { handleHelp, handleAsk, handleTransaction } from "./handler/general.js";
+import { handleHelp, handleAsk, handleTransaction, handleReceive } from "./handler/base.js";
 
 export const skills: SkillGroup[] = [
   {
@@ -48,6 +48,20 @@ export const skills: SkillGroup[] = [
             type: "prompt",
           },
         },
+      },
+    ],
+  },
+  {
+    name: "Receive money in the smart wallet from the user",
+    description: "Receive money in the smart wallet from the user",
+    skills: [
+      {
+        command: "/receive",
+        triggers: ["/receive"],
+        examples: ["/receive"],
+        description: "Receive money in the smart wallet from the user",
+        handler: handleReceive,
+        params: {},
       },
     ],
   },

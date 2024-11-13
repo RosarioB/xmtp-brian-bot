@@ -39,12 +39,11 @@ export const extractParameters = async (prompt: string) => {
     if (!result || !result.completion) {
       throw new Error("I was unable to process your request");
     }
-
-    const [completion] = result.completion;
-
+    
     if(!validateCompletionArray(result.completion)) {
       throw new Error("Your prompt is missing one or more fields among: action, token1, chain, address, amount");
     }
+    const [completion] = result.completion;
     return completion;
   } catch (error) {
     throw new Error("An error occurred while processing your request.");

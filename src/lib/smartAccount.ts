@@ -12,9 +12,9 @@ const cloudPaymaster = createPimlicoClient({
   transport: http(rpcUrl),
 });
 
-export const account = await getAccount(config.account_type);
+const account = await getAccount(config.account_type);
 
-export const smartAccountClient = createSmartAccountClient({
+const smartAccountClient = createSmartAccountClient({
   account,
   chain: baseSepolia,
   bundlerTransport: http(rpcUrl),
