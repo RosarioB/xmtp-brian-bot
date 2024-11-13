@@ -7,8 +7,9 @@ export const skills: SkillGroup[] = [
     description: "Command for managing default behaviours.",
     skills: [
       {
-        command: "/help",
+        skill: "/help",
         triggers: ["/help"],
+        examples: ["/help"],
         handler: handleHelp,
         description: "Get help with the app.",
         params: {},
@@ -20,7 +21,7 @@ export const skills: SkillGroup[] = [
     description: "Ask Brian questions about web3.",
     skills: [
       {
-        command: "/ask [query]",
+        skill: "/ask [query]",
         triggers: ["/ask"],
         examples: ["/ask What is the blockchain?"],
         description: "Ask Brian questions about web3.",
@@ -38,7 +39,7 @@ export const skills: SkillGroup[] = [
     description: "Create transactions to send money to another wallet",
     skills: [
       {
-        command: "/transaction [prompt]",
+        skill: "/transaction [prompt]",
         triggers: ["/transaction"],
         examples: ["/transaction Transfer 0.000002 ETH to 0x20c6F9006d563240031A1388f4f25726029a6368 on Base Sepolia"],
         description: "Create to send money to another wallet.",
@@ -56,7 +57,7 @@ export const skills: SkillGroup[] = [
     description: "Receive money in the smart wallet from the user",
     skills: [
       {
-        command: "/receive",
+        skill: "/receive",
         triggers: ["/receive"],
         examples: ["/receive"],
         description: "Receive money in the smart wallet from the user",
