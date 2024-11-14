@@ -1,18 +1,12 @@
 
 import { toSimpleSmartAccount, toSafeSmartAccount, toEcdsaKernelSmartAccount } from "permissionless/accounts"
 import { privateKeyToAccount } from "viem/accounts"
-import { http, createPublicClient } from 'viem'
+import { Client } from 'viem'
 import config from '../config.js';
-import { baseSepolia } from "viem/chains";
-
-export const client = createPublicClient({
-    chain: baseSepolia,
-    transport: http(config.rpc_url),
-});
 
 const owner = privateKeyToAccount(config.private_key) ;
 
-export const getAccount = async (type: string) => {
+export const getAccount = async (type: string, client: Client) => {
     switch (type) {
         case "simple":
             // EOA signer (private key) and Simple Account

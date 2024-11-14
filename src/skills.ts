@@ -57,12 +57,16 @@ export const skills: SkillGroup[] = [
     description: "Receive money in the smart wallet from the user",
     skills: [
       {
-        skill: "/receive",
+        skill: "/receive [chain]",
         triggers: ["/receive"],
-        examples: ["/receive"],
+        examples: ["/receive Base Sepolia"],
         description: "Receive money in the smart wallet from the user",
         handler: handleReceive,
-        params: {},
+        params: {
+          chain: {
+            type: "string",
+          },
+        },
       },
     ],
   },
