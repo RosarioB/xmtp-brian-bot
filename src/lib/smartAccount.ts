@@ -25,25 +25,20 @@ export const sendTransaction = async (
   receiver: `0x${string}`,
   amount: string
 ) => {
-  try {
-    console.log(`Smart account ${account.address} (Account type: ${config.account_type})`);
-    console.log("Waiting for transaction...");
-    
-    const txHash = await smartAccountClient.sendTransaction({
-      to: receiver,
-      value: parseEther(amount),
-    });
-    
-    console.log(`Transaction succeded: view on Etherscan: https://sepolia.basescan.org/tx/${txHash}`);
-    console.log(
-      `Smart account Balance ${formatEther(
-        await client.getBalance({ address: account.address }),
-        "wei"
-      )} wei`
-    );
-    return txHash;
-  } catch (error) {
-    console.error("An error occurred while sending the transaction:", error);
-    throw error;
-  }
+  
+  console.log("Waiting for transaction...");
+  
+  const txHash = await smartAccountClient.sendTransaction({
+    to: receiver,
+    value: parseEther(amount),
+  });
+  console.log(`Sent ${parseEther(amount)} ETH from Smart account ${account.address} to ${receiver}`);
+  console.log(`Transaction succeded. View on Etherscan: https://sepolia.basescan.org/tx/${txHash}`);
+  console.log(
+    `Smart account Balance ${formatEther(
+      await client.getBalance({ address: account.address }),
+      "wei"
+    )} wei`
+  );
+  return txHash;
 };

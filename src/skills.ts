@@ -1,5 +1,5 @@
 import type { SkillGroup } from "@xmtp/message-kit";
-import { handleHelp, handleAsk, handleTransaction, handleReceive } from "./handler/base.js";
+import { handleHelp, handleAsk, handleTransfer, handleReceive } from "./handler/base.js";
 
 export const skills: SkillGroup[] = [
   {
@@ -35,15 +35,15 @@ export const skills: SkillGroup[] = [
     ],
   },
   {
-    name: "Create Transaction to send money to another wallet",
-    description: "Create transactions to send money to another wallet",
+    name: "Transfer money to an Ethereum address or ENS",
+    description: "Transfer money to an Ethereum address or ENS",
     skills: [
       {
-        skill: "/transaction [prompt]",
-        triggers: ["/transaction"],
-        examples: ["/transaction Transfer 0.000002 ETH to 0x20c6F9006d563240031A1388f4f25726029a6368 on Base Sepolia"],
-        description: "Create to send money to another wallet.",
-        handler: handleTransaction,
+        skill: "/transfer [prompt]",
+        triggers: ["/transfer"],
+        examples: ["/transfer Transfer 0.000002 ETH to 0x20c6F9006d563240031A1388f4f25726029a6368 on Base Sepolia"],
+        description: "Transfer money to an Ethereum address or ENS.",
+        handler: handleTransfer,
         params: {
           prompt: {
             type: "prompt",
