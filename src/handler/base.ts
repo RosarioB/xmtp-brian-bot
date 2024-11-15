@@ -4,7 +4,7 @@ import { sendTransaction } from "../lib/smartAccount.js";
 import { getAccount } from "../lib/account.js";
 import config from "../config.js";
 import { computeAddress, getChain, getRpcUrl } from "../utils.js";
-import { SUPPORTED_CHAINS } from "../constants.js";
+import { SUPPORTED_CHAINS, SUPPORTED_TOKENS } from "../constants.js";
 import { base, baseSepolia } from "viem/chains";
 import { createPublicClient, http } from "viem";
 
@@ -33,7 +33,7 @@ export async function handleAsk(context: HandlerContext) {
   const {
     content: { params },
   } = context.message;
-  
+
   if (!params || !params.query) {
     await context.reply("Please provide a valid query.");
     return;
@@ -57,11 +57,43 @@ export async function handleAsk(context: HandlerContext) {
   }
 }
 
+const validateParameters = (
+  chain: string,
+  resolvedAddress: string | undefined,
+  computedAddress: string,
+  token1: string,
+  action: string
+) => {
+  if (!SUPPORTED_CHAINS.includes(chain.toLowerCase())) {
+    throw new Error(
+      `Chain not supported. Supported chains are: ${SUPPORTED_CHAINS.join(
+        ", "
+      )}`
+    );
+  }
+
+  if (!resolvedAddress) {
+    throw new Error(`The address ${computedAddress} could not be resolved`);
+  }
+
+  if (!SUPPORTED_TOKENS.includes(token1.toLowerCase())) {
+    throw new Error(
+      `Token not supported. Supported chains are: ${SUPPORTED_TOKENS.join(
+        ", "
+      )}`
+    );
+  }
+
+  if (action.toLowerCase() !== "transfer") {
+    throw new Error("Action must be transfer with command /tranfer");
+  }
+};
+
 export async function handleTransfer(context: HandlerContext) {
   const {
     content: { params },
   } = context.message;
-  
+
   if (!params || !params.prompt) {
     await context.reply("Please provide a valid prompt.");
     return;
@@ -70,36 +102,25 @@ export async function handleTransfer(context: HandlerContext) {
   const prompt: string = params.prompt;
 
   try {
-    const {action, token1, chain, address, amount } = await extractParameters(prompt);
+    const { action, token1, chain, address, amount } = await extractParameters(
+      prompt
+    );
     const computedAddress = computeAddress(address!);
     const userInfo = await getUserInfo(computedAddress);
-    const resolvedAddress = userInfo?.address
-
-    if(!SUPPORTED_CHAINS.includes(chain.toLowerCase())){
-      await context.reply(`Chain not supported. Supported chains are: ${SUPPORTED_CHAINS.join(", ")}`);
-      return;
-    }
-    
-    if(! resolvedAddress) {
-      await context.reply(`The address ${computedAddress} could not be resolved`);
-      return;
-    }
-
-    console.log("Resolved address " + resolvedAddress);
-
+    const resolvedAddress = userInfo?.address;
+    validateParameters(chain, resolvedAddress, computedAddress, token1, action);
     const viemChain = getChain(chain);
-    
-    if (
-      action.toLowerCase() === "transfer" &&
-      token1!.toLowerCase() === "eth"
-    ) {
-      const tx = await sendTransaction(
-        resolvedAddress as `0x${string}`,
-        amount as string,
-        viemChain.id
-      );
-      await context.reply(`The transaction ${tx} has been executed. View on Block Explorer: ${viemChain.blockExplorers.default.url}/tx/${tx}`);
-    }
+
+    const tx = await sendTransaction(
+      resolvedAddress as `0x${string}`,
+      amount as string,
+      viemChain.id,
+      token1
+    );
+
+    await context.reply(
+      `The transaction ${tx} has been executed. View on Block Explorer: ${viemChain.blockExplorers.default.url}/tx/${tx}`
+    );
   } catch (error) {
     if (error instanceof Error) {
       console.log(error.message);
@@ -108,7 +129,6 @@ export async function handleTransfer(context: HandlerContext) {
       console.log(error);
       await context.reply("An error has occurred");
     }
-    return;
   }
 }
 
@@ -117,8 +137,14 @@ export async function handleReceive(context: HandlerContext) {
     content: { params },
   } = context.message;
 
-  if (!params || !params.chain || !SUPPORTED_CHAINS.includes(params.chain.toLowerCase())) {
-    await context.reply(`Chain not supported. Supported chains: ${SUPPORTED_CHAINS.join(", ")}`);
+  if (
+    !params ||
+    !params.chain ||
+    !SUPPORTED_CHAINS.includes(params.chain.toLowerCase())
+  ) {
+    await context.reply(
+      `Chain not supported. Supported chains: ${SUPPORTED_CHAINS.join(", ")}`
+    );
     return;
   }
 
@@ -129,7 +155,6 @@ export async function handleReceive(context: HandlerContext) {
     chain,
     transport: http(getRpcUrl(isBaseSepolia)),
   });
-
 
   const account = await getAccount(config.account_type, client);
   await context.reply(`Send your money to the account ${account.address}`);
