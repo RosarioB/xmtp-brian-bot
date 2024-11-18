@@ -3,10 +3,22 @@ import { brian, extractParameters } from "../lib/brian.js";
 import { sendTransaction } from "../lib/smartAccount.js";
 import { getAccount } from "../lib/account.js";
 import config from "../config.js";
-import { computeAddress, getChain, getRpcUrl } from "../utils.js";
-import { SUPPORTED_CHAINS, SUPPORTED_TOKENS } from "../constants.js";
-import { base, baseSepolia } from "viem/chains";
-import { createPublicClient, http } from "viem";
+import {
+  computeAddress,
+  getChain,
+  getPublicClient,
+} from "../utils.js";
+import {
+  BASE_SEPOLIA_USDC_ADDRESS,
+  SUPPORTED_CHAINS,
+  SUPPORTED_TOKENS,
+} from "../constants.js";
+import {
+  erc20Abi,
+  formatEther,
+  formatUnits,
+} from "viem";
+import BigNumber from "bignumber.js";
 
 const ASK_PROMPT_SUFFIX = "Please explain in no more than 5 lines.";
 
@@ -57,12 +69,12 @@ export async function handleAsk(context: HandlerContext) {
   }
 }
 
-const validateParameters = (
+const validateParameters = async (
   chain: string,
   resolvedAddress: string | undefined,
   computedAddress: string,
   token1: string,
-  action: string
+  amount: string
 ) => {
   if (!SUPPORTED_CHAINS.includes(chain.toLowerCase())) {
     throw new Error(
@@ -84,8 +96,32 @@ const validateParameters = (
     );
   }
 
-  if (action.toLowerCase() !== "transfer") {
-    throw new Error("Action must be transfer with command /tranfer");
+  const isBaseSepolia = chain.toLowerCase() === "base sepolia";
+  const client = getPublicClient(isBaseSepolia);
+  const account = await getAccount(config.account_type, client);
+  let balance: string;
+  if (token1.toLowerCase() === "eth") {
+    balance = formatEther(
+      await client.getBalance({
+        address: account.address,
+      })
+    );
+  } else {
+    balance = formatUnits(
+      await client.readContract({
+        abi: erc20Abi,
+        address: BASE_SEPOLIA_USDC_ADDRESS,
+        functionName: "balanceOf",
+        args: [account.address],
+      }),
+      6
+    );
+  }
+
+  if (BigNumber(amount).gte(BigNumber(balance))) {
+    throw new Error(
+      `Insufficient funds. The current balance of ${account.address} is ${balance} ${token1}`
+    );
   }
 };
 
@@ -102,13 +138,17 @@ export async function handleTransfer(context: HandlerContext) {
   const prompt: string = params.prompt;
 
   try {
-    const { action, token1, chain, address, amount } = await extractParameters(
-      prompt
-    );
+    const { token1, chain, address, amount } = await extractParameters(prompt);
     const computedAddress = computeAddress(address!);
     const userInfo = await getUserInfo(computedAddress);
     const resolvedAddress = userInfo?.address;
-    validateParameters(chain, resolvedAddress, computedAddress, token1, action);
+    await validateParameters(
+      chain,
+      resolvedAddress,
+      computedAddress,
+      token1,
+      amount
+    );
     const viemChain = getChain(chain);
 
     const tx = await sendTransaction(
@@ -149,13 +189,7 @@ export async function handleReceive(context: HandlerContext) {
   }
 
   const isBaseSepolia = params.chain.toLowerCase() === "base sepolia";
-  const chain = isBaseSepolia ? baseSepolia : base;
-
-  const client = createPublicClient({
-    chain,
-    transport: http(getRpcUrl(isBaseSepolia)),
-  });
-
+  const client = getPublicClient(isBaseSepolia);
   const account = await getAccount(config.account_type, client);
   await context.reply(`Send your money to the account ${account.address}`);
 }

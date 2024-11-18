@@ -1,10 +1,10 @@
 import {
   parseEther,
   http,
-  formatEther,
   createPublicClient,
   encodeFunctionData,
   erc20Abi,
+  parseUnits,
 } from "viem";
 import { baseSepolia, base } from "viem/chains";
 import { createSmartAccountClient } from "permissionless";
@@ -49,9 +49,6 @@ export const sendTransaction = async (
       to: receiver,
       value: parseEther(amount),
     });
-    console.log(
-      `Transferred ${amount} ETH from Smart account ${account.address} to ${receiver}`
-    );
   } else {
     txHash = await smartAccountClient.sendTransaction({
       to: isBaseSepolia ? BASE_SEPOLIA_USDC_ADDRESS : BASE_USDC_ADDRESS,
@@ -59,13 +56,13 @@ export const sendTransaction = async (
       data: encodeFunctionData({
         abi: erc20Abi,
         functionName: "transfer",
-        args: [receiver, BigInt(amount)],
+        args: [receiver, parseUnits(amount, 6)],
       }),
     });
-    console.log(
-      `Transferred ${amount} USDC from Smart account ${account.address} to ${receiver}`
-    );
   }
+  console.log(
+    `Transferred ${amount} ${token} from Smart account ${account.address} to ${receiver}`
+  );
 
   console.log(
     `Transaction succeded. View on Block Explorer: ${chain.blockExplorers.default.url}/tx/${txHash}`
