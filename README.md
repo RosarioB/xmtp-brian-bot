@@ -32,7 +32,7 @@ Set up these variables in your app
 ```sh
 KEY= # 0x... the private key of the bot wallet (with the 0x prefix)
 BRIAN_API_KEY= # Brian API KEY
-RPC_URL= # https://api.developer.coinbase.com/rpc/v1/base-sepolia/<api-key>
+CDP_API_KEY= # coinbase developer platfor api key
 ```
 
 # Docker
