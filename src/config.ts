@@ -8,4 +8,5 @@ export default {
   entry_point: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789" as `0x${string}`,
   entry_point_version: "0.6" as "0.6" | "0.7",
   brian_api_key: process.env.BRIAN_API_KEY as string,
+  sepolia_url: process.env.SEPOLIA_URL as string,
 };

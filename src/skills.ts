@@ -4,6 +4,8 @@ import {
   handleAsk,
   handleTransfer,
   handleReceive,
+  handleSwap,
+  handleWrap,
 } from "./handler/base.js";
 
 export const skills: SkillGroup[] = [
@@ -60,17 +62,56 @@ export const skills: SkillGroup[] = [
     ],
   },
   {
-    name: "Receive money in the smart wallet from the user",
-    description: "Receive money in the smart wallet from the user",
+    name: "Receive funds from the user",
+    description: "Informs the user of the wallets to which they should send the funds.",
     skills: [
       {
-        skill: "/receive [chain]",
+        skill: "/receive [action] [chain]",
         triggers: ["/receive"],
-        examples: ["/receive Base Sepolia"],
-        description: "Receive money in the smart wallet from the user",
+        examples: ["/receive transfer Base Sepolia", "/receive swap Sepolia"],
+        description: "Informs the user of the wallets to which they should send the funds.",
         handler: handleReceive,
         params: {
+          action: {
+            type: "string",
+          },
           chain: {
+            type: "string",
+          },
+        },
+      },
+    ],
+  },
+  {
+    name: "Swap tokens",
+    description: "Swap tokens",
+    skills: [
+      {
+        skill: "/swap [prompt]",
+        triggers: ["/swap"],
+        examples: ["/swap Swap 0.000001 WETH to USDC on Sepolia"],
+        description: "Swap tokens",
+        handler: handleSwap,
+        params: {
+          prompt: {
+            type: "prompt",
+          },
+        },
+      },
+    ],
+  },
+  {
+    name: "Wrap eth",
+    description: "Wrap ETH into WETH",
+    skills: [
+      {
+        skill: "/wrap [amount]",
+        triggers: ["/wrap"],
+        examples: ["/wrap 0.0001"],
+        description: "Wrap ETH",
+        handler: handleWrap,
+        params: {
+          amount: {
             type: "string",
           },
         },

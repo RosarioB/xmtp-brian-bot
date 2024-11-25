@@ -1,7 +1,8 @@
-import { base, baseSepolia } from "viem/chains";
+import { base, baseSepolia, sepolia } from "viem/chains";
 import config from "./config.js";
 import { CDB_URL } from "./constants.js";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 export const computeAddress = (address: string) => {
   if (address.startsWith("0x") || address.endsWith(".eth")) {
@@ -29,4 +30,23 @@ export const getPublicClient = (isBaseSepolia: boolean) => {
     chain,
     transport: http(getRpcUrl(isBaseSepolia)),
   });
+};
+
+export const getSepoliaPublicClient = () => {
+  return createPublicClient({
+    chain: sepolia,
+    transport: http(config.sepolia_url),
+  });
+};
+
+export const getSepoliaWalletClient = () => {
+  return createWalletClient({
+    account: privateKeyToAccount(config.private_key),
+    chain: sepolia,
+    transport: http(config.sepolia_url),
+  });
+};
+
+export const getBotAccount = () => {
+  return privateKeyToAccount(config.private_key);
 };
