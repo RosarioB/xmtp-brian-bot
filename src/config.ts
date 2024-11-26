@@ -9,4 +9,5 @@ export default {
   entry_point_version: "0.6" as "0.6" | "0.7",
   brian_api_key: process.env.BRIAN_API_KEY as string,
   sepolia_url: process.env.SEPOLIA_URL as string,
+  unichain_sepolia_url: process.env.UNICHAIN_SEPOLIA_URL as string,
 };

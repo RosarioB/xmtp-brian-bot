@@ -11,13 +11,16 @@ import {
   computeAddress,
   getBotAccount,
   getChain,
-  getPublicClient,
+  getViemChain,
+  getBasePublicClient,
   getSepoliaPublicClient,
   getSepoliaWalletClient,
+  getBaseSepoliaWalletClient,
+  getUnichainSepoliaWalletClient,
+  Chain,
 } from "../utils.js";
 import {
   BASE_SEPOLIA_USDC_ADDRESS,
-  SEPOLIA_USDC_CONTRACT_ADDRESS,
   SEPOLIA_WETH_CONTRACT_ADDRESS,
   SUPPORTED_CHAINS,
   SUPPORTED_TOKENS,
@@ -28,11 +31,10 @@ import {
   formatEther,
   formatUnits,
   parseUnits,
-  stringToBytes,
 } from "viem";
 import BigNumber from "bignumber.js";
-import { signer, swap, wrapETH } from "../lib/uniswap/uniswap.js";
-import { sepolia } from "viem/chains";
+import { CONSTANTS, swapEthToUsdc, wrapEth } from "../lib/uniswap/uniswap.js";
+import { baseSepolia, sepolia } from "viem/chains";
 
 const ASK_PROMPT_SUFFIX = "Please explain in no more than 5 lines.";
 
@@ -49,7 +51,7 @@ Hello! I am the Brain AI Agent Bot. Here are the commands you can use:
    - Example: \`/transfer Transfer 0.000001 ETH to vitalik on Base Sepolia\`
 
 4. **/wrap**: Wrap ETH into WETH.
-   - Example: \`/wrap 0.0001\`     
+   - Example: \`/wrap 0.0001 Sepolia\`     
 
 5. **/swap**: Swap WETH to USDC and transfer it to another account.
    - Example: \`/swap Swap 0.000001 WETH to USDC and send it to vitalik on Sepolia\` 
@@ -117,7 +119,7 @@ const validateParameters = async (
   }
 
   const isBaseSepolia = chain.toLowerCase() === "base sepolia";
-  const client = getPublicClient(isBaseSepolia);
+  const client = getBasePublicClient(isBaseSepolia);
   const account = await getAccount(config.account_type, client);
   let balance: string;
   if (token1.toLowerCase() === "eth") {
@@ -196,7 +198,8 @@ export async function handleTransfer(context: HandlerContext) {
 
 const validateReceiveParams = (params: any) => {
   const SUPPORTED_ACTION = ["transfer", "swap"];
-  const TRANSFER_CHAINS = ["basesepolia", "base"]
+  const TRANSFER_CHAINS = ["basesepolia", "base"];
+  const SWAP_CHAINS = ["basesepolia", "unichainsepolia", "sepolia"];
   if (!params || !params.action || !params.chain) {
     throw new Error("Missing one or more paramas: action, chain");
   }
@@ -215,8 +218,13 @@ const validateReceiveParams = (params: any) => {
       )}`
     );
   }
-  if (params.action === "swap" && params.chain.toLowerCase() !== "sepolia") {
-    throw new Error(`Chain not supported. Supported swap chains: sepolia`);
+  if (
+    params.action === "swap" &&
+    !SWAP_CHAINS.includes(params.chain.toLowerCase())
+  ) {
+    throw new Error(
+      `Chain not supported. Supported swap chains: ${SWAP_CHAINS.join(", ")}`
+    );
   }
 };
 
@@ -230,7 +238,7 @@ export async function handleReceive(context: HandlerContext) {
     const { action, chain } = params;
     if (action.toLowerCase() === "transfer") {
       const isBaseSepolia = params.chain.toLowerCase() === "basesepolia";
-      const client = getPublicClient(isBaseSepolia);
+      const client = getBasePublicClient(isBaseSepolia);
       const account = await getAccount(config.account_type, client);
       await context.send(
         `Send your money to the account ${account.address} on ${chain}`
@@ -257,14 +265,19 @@ const validateSwapParameters = async (
   token2: string,
   amount: string
 ) => {
-  if (chain.toLowerCase() !== "sepolia") {
-    throw new Error("Chain not supported");
+  const SUPPORTED_CHAINS = ["sepolia", "base sepolia", "unichain sepolia"];
+  if (!SUPPORTED_CHAINS.includes(chain.toLowerCase())) {
+    throw new Error(
+      `Chain not supported. Supported chains are ${SUPPORTED_CHAINS.join(
+        ", "
+      )}.`
+    );
   }
   if (token1.toLowerCase() !== "weth") {
-    throw new Error("Token 1 not supported");
+    throw new Error("Token 1 not supported. Supported token WETH.");
   }
   if (token2.toLowerCase() !== "usdc") {
-    throw new Error("Token 2 not supported");
+    throw new Error("Token 2 not supported. Supported token USDC.");
   }
 
   const client = getSepoliaPublicClient();
@@ -302,43 +315,21 @@ export async function handleSwap(context: HandlerContext) {
     const { action, chain, token1, token2, address, amount } =
       await extractSwapParameters(prompt);
     await validateSwapParameters(chain, token1, token2, amount);
+    const viemChain = getViemChain(chain);
+    const result = await swapEthToUsdc(parseFloat(amount!), viemChain);
+    if (result?.txHash) {
+      await context.send(
+        `The swap transaction ${
+          result!.txHash
+        } has been executed. View on Block Explorer: ${
+          viemChain.blockExplorers.default.url
+        }/tx/${result!.txHash}`
+      );
 
-    const result = await swap(parseFloat(amount!));
-    await context.send(
-      `The swap transaction ${
-        result!.txHash
-      } has been executed. View on Block Explorer: ${
-        sepolia.blockExplorers.default.url
-      }/tx/${result!.txHash}`
-    );
-
-    // Send USDC to the address if specified in the prompt
-    if (address && address.trim() !== "") {
-      const computedAddress = computeAddress(address);
-      const userInfo = await getUserInfo(computedAddress);
-      const resolvedAddress = userInfo?.address;
-
-      const client = getSepoliaWalletClient();
-      const sendTxHash = await client.sendTransaction({
-        to: SEPOLIA_USDC_CONTRACT_ADDRESS,
-        data: encodeFunctionData({
-          abi: erc20Abi,
-          functionName: "transfer",
-          args: [
-            resolvedAddress as `0x${string}`,
-            parseUnits(result!.amountTokenOut, 6),
-          ],
-        }),
-        value: 0n,
-      });
-
-      const log = `Sent ${result!.amountTokenOut} ${
-        result!.tokenOut
-      } to ${resolvedAddress}. View on Block Explorer: ${
-        sepolia.blockExplorers.default.url
-      }/tx/${sendTxHash}`;
-      console.log(log);
-      await context.send(log);
+      if (address && address.trim() !== "") {
+        const log = await sendUsdc(address, viemChain, result);
+        await context.send(log);
+      }
     }
   } catch (error) {
     if (error instanceof Error) {
@@ -351,7 +342,73 @@ export async function handleSwap(context: HandlerContext) {
   }
 }
 
+const sendUsdc = async (
+  address: string,
+  viemChain: Chain,
+  result:
+    | { txHash: string; amountTokenOut: string; tokenOut: string }
+    | undefined
+): Promise<string> => {
+  const computedAddress = computeAddress(address);
+  const userInfo = await getUserInfo(computedAddress);
+  const resolvedAddress = userInfo?.address;
+
+  let sendTxHash: `0x${string}`;
+  if (viemChain.id === sepolia.id) {
+    const client = getSepoliaWalletClient();
+    sendTxHash = await client.sendTransaction({
+      to: CONSTANTS.sepolia.USDC_CONTRACT_ADDRESS as `0x${string}`,
+      data: encodeFunctionData({
+        abi: erc20Abi,
+        functionName: "transfer",
+        args: [
+          resolvedAddress as `0x${string}`,
+          parseUnits(result!.amountTokenOut, 6),
+        ],
+      }),
+      value: 0n,
+    });
+  } else if (viemChain.id === baseSepolia.id) {
+    const client = getBaseSepoliaWalletClient();
+    sendTxHash = await client.sendTransaction({
+      to: CONSTANTS.baseSepolia.USDC_CONTRACT_ADDRESS as `0x${string}`,
+      data: encodeFunctionData({
+        abi: erc20Abi,
+        functionName: "transfer",
+        args: [
+          resolvedAddress as `0x${string}`,
+          parseUnits(result!.amountTokenOut, 6),
+        ],
+      }),
+      value: 0n,
+    });
+  } else {
+    const client = getUnichainSepoliaWalletClient();
+    sendTxHash = await client.sendTransaction({
+      to: CONSTANTS.unichainSepolia.USDC_CONTRACT_ADDRESS as `0x${string}`,
+      data: encodeFunctionData({
+        abi: erc20Abi,
+        functionName: "transfer",
+        args: [
+          resolvedAddress as `0x${string}`,
+          parseUnits(result!.amountTokenOut, 6),
+        ],
+      }),
+      value: 0n,
+    });
+  }
+
+  const log = `Sent ${result!.amountTokenOut} ${
+    result!.tokenOut
+  } to ${resolvedAddress}. View on Block Explorer: ${
+    viemChain.blockExplorers.default.url
+  }/tx/${sendTxHash}`;
+  console.log(log);
+  return log;
+};
+
 export async function handleWrap(context: HandlerContext) {
+  const VALID_CHAINS = ["sepolia", "basesepolia", "unichainsepolia"];
   const {
     content: { params },
   } = context.message;
@@ -360,10 +417,20 @@ export async function handleWrap(context: HandlerContext) {
     await context.send(`Provide a valid amount of ETH to Wrap`);
     return;
   }
-  try {
-    const tx = await wrapETH(parseFloat(params.amount));
+
+  if (!params.chain || !VALID_CHAINS.includes(params.chain.toLowerCase())) {
     await context.send(
-      `The transaction ${tx} has been executed. View on Block Explorer: ${sepolia.blockExplorers.default.url}/tx/${tx}`
+      `Chain invalid. Supported values are ${VALID_CHAINS.join(", ")}`
+    );
+    return;
+  }
+  const chain = params.chain;
+
+  try {
+    const viemChain = getViemChain(chain);
+    const tx = await wrapEth(parseFloat(params.amount), viemChain);
+    await context.send(
+      `The transaction ${tx} has been executed. View on Block Explorer: ${viemChain.blockExplorers.default.url}/tx/${tx}`
     );
   } catch (error) {
     if (error instanceof Error) {

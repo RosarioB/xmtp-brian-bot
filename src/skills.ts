@@ -105,13 +105,16 @@ export const skills: SkillGroup[] = [
     description: "Wrap ETH into WETH",
     skills: [
       {
-        skill: "/wrap [amount]",
+        skill: "/wrap [amount] [chain]",
         triggers: ["/wrap"],
-        examples: ["/wrap 0.0001"],
+        examples: ["/wrap 0.0001 Sepolia"],
         description: "Wrap ETH",
         handler: handleWrap,
         params: {
           amount: {
+            type: "string",
+          },
+          chain: {
             type: "string",
           },
         },

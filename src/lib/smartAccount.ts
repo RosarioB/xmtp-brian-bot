@@ -11,7 +11,7 @@ import { createSmartAccountClient } from "permissionless";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { getAccount } from "./account.js";
 import config from "../config.js";
-import { getRpcUrl } from "../utils.js";
+import { getBaseRpcUrl } from "../utils.js";
 import { BASE_SEPOLIA_USDC_ADDRESS, BASE_USDC_ADDRESS } from "../constants.js";
 
 export const sendTransaction = async (
@@ -22,7 +22,7 @@ export const sendTransaction = async (
 ) => {
   const isBaseSepolia = chainId === 84532;
   const chain = isBaseSepolia ? baseSepolia : base;
-  const rpcUrl = getRpcUrl(isBaseSepolia);
+  const rpcUrl = getBaseRpcUrl(isBaseSepolia);
 
   const client = createPublicClient({
     chain,
