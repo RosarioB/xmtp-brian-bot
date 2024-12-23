@@ -1,4 +1,5 @@
 # xmtp_brian_bot
+This is the source code of this [Youtube video](https://youtu.be/whBrV2liWVk). 
 
 This project is generated using the [MessageKit](https://message-kit.vercel.app) v1.0.11 CLI. Below are the instructions to set up and run the project.
 
